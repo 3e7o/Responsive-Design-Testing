@@ -14,4 +14,12 @@ steps:
   inputs:
     rootFolderOrFile: '$(build.sourcesDirectory)'
     includeRootFolder: false
+- task: SnykSecurityScan@1
+  inputs:
+    serviceConnectionEndpoint: 'SnykTest'
+    testType: 'code'
+    codeSeverityThreshold: 'high'
+    failOnIssues: true
+    projectName: 'Test1'
 - task: PublishBuildArtifacts@1
+
