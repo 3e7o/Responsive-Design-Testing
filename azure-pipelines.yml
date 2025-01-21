@@ -8,14 +8,12 @@ trigger:
 
 pool:
   vmImage: ubuntu-latest
-  imageName: "ubuntu-latest"
 
 steps:
 - task: ArchiveFiles@2
   inputs:
     rootFolderOrFile: '$(build.sourcesDirectory)'
     includeRootFolder: false
-
 - task: SnykSecurityScan@1
   inputs:
     serviceConnectionEndpoint: 'SnykTest'
@@ -23,68 +21,4 @@ steps:
     codeSeverityThreshold: 'high'
     failOnIssues: true
     projectName: 'Test1'
-
-# Install the latest version of HawkScan
-- task: HawkScanInstall@1
-  inputs:
-    version: "4.0.3"
-    installerType: "$(installerType)"
-  condition: not(and(eq(variables['installerType'], 'auto'), eq(variables['imageName'], 'ubuntu-latest')))
-
-- task: HawkScanInstall@1
-  inputs:
-    version: "4.0.3"
-    installerType: "$(installerType)"
-    installPath: '/home/vsts/custom'
-  condition: and(eq(variables['installerType'], 'auto'), eq(variables['imageName'], 'ubuntu-latest'))
-
-# Upgrade JDK version to 11 to run JavaSpringVulny
-- task: JavaToolInstaller@0
-  inputs:
-    versionSpec: "17"
-    jdkArchitectureOption: "x64"
-    jdkSourceOption: "PreInstalled"
-
-# Download and start JavaSpringVulny in the background on Linux
-- script: |
-    curl -Ls https://github.com/kaakaww/javaspringvulny/releases/download/0.2.0/java-spring-vuly-0.2.0.jar -o ./java-spring-vuly-0.2.0.jar
-    java -jar ./java-spring-vuly-0.2.0.jar &
-  displayName: Start JavaSpringVulny on Linux
-  condition: eq(variables['imageName'], 'ubuntu-latest')
-
-# Download and start JavaSpringVulny on Windows
-- powershell: |
-    Invoke-WebRequest -Uri "https://github.com/kaakaww/javaspringvulny/releases/download/0.2.0/java-spring-vuly-0.2.0.jar" -OutFile "java-spring-vuly-0.2.0.jar"
-    java --version
-    Start-Process java -ArgumentList "-jar","java-spring-vuly-0.2.0.jar","--spring.profiles.active=windows"
-  displayName: Start JavaSpringVulny on Windows with Gradle in the background
-  env:
-    SPRING_DATASOURCE_URL: 'jdbc:h2:file:D:\\a\\1\\db\\vulny;DB_CLOSE_ON_EXIT=FALSE;AUTO_RECONNECT=TRUE'
-  condition: eq(variables['imageName'], 'windows-latest')
-
-# Run HawkScan with the StackHawk Azure Extension
-- task: RunHawkScan@1
-  inputs:
-    configFile: "stackhawk.yml"
-    version: "4.0.3"
-  env:
-    HAWK_API_KEY: $(HAWK_API_KEY)
-    APP_ENV: $(imageName)
-    APP_ID: $(appId2)
-    SARIF_ARTIFACT: true
-  condition: not(and(eq(variables['installerType'], 'auto'), eq(variables['imageName'], 'ubuntu-latest')))
-
-- task: RunHawkScan@1
-  inputs:
-    configFile: "stackhawk.yml"
-    version: "4.0.3"
-    installPath: '/home/vsts/custom'
-  env:
-    HAWK_API_KEY: $(HAWK_API_KEY)
-    APP_ENV: $(imageName)
-    APP_ID: $(appId2)
-    SARIF_ARTIFACT: true
-  condition: and(eq(variables['installerType'], 'auto'), eq(variables['imageName'], 'ubuntu-latest'))
-
-# Publish build artifacts
 - task: PublishBuildArtifacts@1
